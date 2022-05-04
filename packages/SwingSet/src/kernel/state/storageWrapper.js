@@ -78,11 +78,13 @@ export function buildCrankBuffer(
     const crankhash = crankhasher.finish();
     resetCrankhash();
 
-    // Digest the old activityhash and new crankhash into the new activityhash.
+    // Get the old activityhash directly from (unbuffered) backing storage.
     let oldActivityhash = kvStore.get('activityhash');
     if (oldActivityhash === undefined) {
       oldActivityhash = '';
     }
+
+    // Digest the old activityhash and new crankhash into the new activityhash.
     const hasher = createSHA256();
     hasher.add('activityhash');
     hasher.add('\n');
@@ -91,7 +93,7 @@ export function buildCrankBuffer(
     hasher.add(crankhash);
     hasher.add('\n');
 
-    // Store the new activityhash.
+    // Store the new activityhash directly into (unbuffered) backing storage.
     const activityhash = hasher.finish();
     kvStore.set('activityhash', activityhash);
 
