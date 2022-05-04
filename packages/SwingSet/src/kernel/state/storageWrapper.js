@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { insistStorageAPI } from '../../lib/storageAPI.js';
+import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
 
 // We wrap a provided object implementing StorageAPI methods { has, getKeys,
 // get, set, delete } (cf. packages/SwingSet/docs/state.md#transactions) and
@@ -12,44 +12,6 @@ import { insistStorageAPI } from '../../lib/storageAPI.js';
 // nature of that parameter, perhaps we should establish some naming convention
 // that signals that the object could be foreign and thus deserving of
 // xenophobia.
-
-/**
- * Given two iterators over sequences of unique strings sorted in ascending
- * order lexicographically by UTF-16 code unit, produce a new iterator that will
- * output the ascending sequence of unique strings from their merged output.
- *
- * @param { Iterator } it1
- * @param { Iterator } it2
- *
- * @yields any
- */
-function* mergeUtf16SortedIterators(it1, it2) {
-  let v1 = it1.next();
-  let v2 = it2.next();
-  while (!v1.done && !v2.done) {
-    if (v1.value < v2.value) {
-      const result = v1.value;
-      v1 = it1.next();
-      yield result;
-    } else if (v1.value === v2.value) {
-      const result = v1.value;
-      v1 = it1.next();
-      v2 = it2.next();
-      yield result;
-    } else {
-      const result = v2.value;
-      v2 = it2.next();
-      yield result;
-    }
-  }
-  const itrest = v1.done ? it2 : it1;
-  let v = v1.done ? v2 : v1;
-  while (!v.done) {
-    const result = v.value;
-    v = itrest.next();
-    yield result;
-  }
-}
 
 /**
  * Create and return a crank buffer, which wraps a storage object with logic
@@ -74,82 +36,14 @@ export function buildCrankBuffer(
   function resetCrankhash() {
     crankhasher = createSHA256();
   }
-
-  // To avoid confusion, additions and deletions are prevented from sharing
-  // the same key at any given time.
-  const additions = new Map();
-  const deletions = new Set();
   resetCrankhash();
 
-  const crankBuffer = {
-    has(key) {
-      if (additions.has(key)) {
-        return true;
-      }
-      if (deletions.has(key)) {
-        return false;
-      }
-      return kvStore.has(key);
-    },
-
-    *getKeys(start, end) {
-      // Warning: this function introduces a consistency risk that callers must
-      // take into account in their usage of it.  If keys are added to the store
-      // within the range from `start` to `end` while iteration is in progress,
-      // these additions will not be visible to this iterator and thus not
-      // reflected in the stream of keys it returns.  Callers who might be
-      // vulnerable to any resulting data inconsistencies thus introduced must
-      // take measures to protect themselves, either by avoiding making such
-      // changes while iterating or by arranging to invalidate and reconstruct
-      // the iterator when such changes are made.  At this layer of abstraction,
-      // the store does not possess the necessary knowledge to protect the
-      // caller from these kinds of risks, as the nature of the risks themselves
-      // varies depending on what the caller is trying to do.  This API should
-      // not be made available to user (i.e., vat) code.  Rather, it is intended
-      // as a low-level mechanism to use in implementating higher level storage
-      // abstractions that are expected to provide their own consistency
-      // protections as appropriate to their own circumstances.
-
-      assert.typeof(start, 'string');
-      assert.typeof(end, 'string');
-
-      // Find additions within the query range for use during iteration.
-      const added = [];
-      for (const k of additions.keys()) {
-        if ((start === '' || start <= k) && (end === '' || k < end)) {
-          added.push(k);
-        }
-      }
-      added.sort();
-
-      for (const k of mergeUtf16SortedIterators(
-        added.values(),
-        kvStore.getKeys(start, end),
-      )) {
-        if ((start === '' || start <= k) && (end === '' || k < end)) {
-          if (!deletions.has(k)) {
-            yield k;
-          }
-        }
-      }
-    },
-
-    get(key) {
-      assert.typeof(key, 'string');
-      if (additions.has(key)) {
-        return additions.get(key);
-      }
-      if (deletions.has(key)) {
-        return undefined;
-      }
-      return kvStore.get(key);
-    },
-
-    set(key, value) {
-      assert.typeof(key, 'string');
-      assert.typeof(value, 'string');
-      additions.set(key, value);
-      deletions.delete(key);
+  const {
+    kvStore: crankBuffer,
+    commit,
+    abort,
+  } = makeBufferedStorage(kvStore, {
+    onPendingSet(key, value) {
       if (isConsensusKey(key)) {
         crankhasher.add('add');
         crankhasher.add('\n');
@@ -159,11 +53,7 @@ export function buildCrankBuffer(
         crankhasher.add('\n');
       }
     },
-
-    delete(key) {
-      assert.typeof(key, 'string');
-      additions.delete(key);
-      deletions.add(key);
+    onPendingDelete(key) {
       if (isConsensusKey(key)) {
         crankhasher.add('delete');
         crankhasher.add('\n');
@@ -171,7 +61,8 @@ export function buildCrankBuffer(
         crankhasher.add('\n');
       }
     },
-  };
+    onAbort: resetCrankhash,
+  });
 
   /**
    * Flush any buffered mutations to the underlying storage, and update the
@@ -180,17 +71,14 @@ export function buildCrankBuffer(
    * @returns { { crankhash: string, activityhash: string } }
    */
   function commitCrank() {
-    for (const [key, value] of additions) {
-      kvStore.set(key, value);
-    }
-    for (const key of deletions) {
-      kvStore.delete(key);
-    }
-    additions.clear();
-    deletions.clear();
+    // Flush the buffered operations.
+    commit();
+
+    // Calculate the resulting crankhash and reset for the next crank.
     const crankhash = crankhasher.finish();
     resetCrankhash();
 
+    // Digest the old activityhash and new crankhash into the new activityhash.
     let oldActivityhash = kvStore.get('activityhash');
     if (oldActivityhash === undefined) {
       oldActivityhash = '';
@@ -202,22 +90,15 @@ export function buildCrankBuffer(
     hasher.add('\n');
     hasher.add(crankhash);
     hasher.add('\n');
+
+    // Store the new activityhash.
     const activityhash = hasher.finish();
     kvStore.set('activityhash', activityhash);
 
     return { crankhash, activityhash };
   }
 
-  /**
-   * Discard any buffered mutations.
-   */
-  function abortCrank() {
-    additions.clear();
-    deletions.clear();
-    resetCrankhash();
-  }
-
-  return harden({ crankBuffer, commitCrank, abortCrank });
+  return harden({ crankBuffer, commitCrank, abortCrank: abort });
 }
 
 /**
