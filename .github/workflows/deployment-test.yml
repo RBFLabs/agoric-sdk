@@ -40,6 +40,10 @@ jobs:
         with:
           node-version: 14.x
           cache-built: false
+        env:
+          # Forces xsnap to initialize all memory to random data, which increases
+          # the chances the content of snapshots may deviate between validators
+          XSNAP_RANDOM_INIT: '1'
 
       # Select a branch on loadgen to test against by adding text to the body of the
       # pull request. For example: #loadgen-branch: user-123-update-foo
