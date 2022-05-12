@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { E } from '@endo/eventual-send';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';

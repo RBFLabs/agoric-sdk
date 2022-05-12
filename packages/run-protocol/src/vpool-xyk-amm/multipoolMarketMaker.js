@@ -1,4 +1,5 @@
 // @ts-check
+// @jessie-check
 
 import { makeWeakStore } from '@agoric/store';
 import { Far } from '@endo/marshal';
