@@ -65,7 +65,7 @@
     "eslint-plugin-react-hooks": "^4.3.0",
     "react": "^16.14.0",
     "react-dom": "^16.8.0",
-    "typescript": "beta"
+    "typescript": "^4.7.1-rc"
   },
   "ava": {
     "files": [
