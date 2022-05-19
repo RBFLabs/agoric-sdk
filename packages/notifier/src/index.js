@@ -20,3 +20,4 @@ export {
   // Consider deprecating or not reexporting
   makeAsyncIterableFromNotifier,
 } from './asyncIterableAdaptor.js';
+export { makeMarshalSubscriber } from './marshal.js';
