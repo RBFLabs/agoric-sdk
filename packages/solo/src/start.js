@@ -186,6 +186,7 @@ const buildSwingset = async (
     SLOGSENDER,
     LMDB_MAP_SIZE,
     SWING_STORE_TRACE,
+    XSNAP_KEEP_SNAPSHOTS,
   } = env;
   const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
@@ -205,9 +206,12 @@ const buildSwingset = async (
       }
   }
 
+  const keepSnapshots =
+    XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
+
   const { kvStore, streamStore, snapStore, commit } = openSwingStore(
     kernelStateDBDir,
-    { mapSize, traceFile: swingStoreTraceFile },
+    { mapSize, traceFile: swingStoreTraceFile, keepSnapshots },
   );
   const hostStorage = {
     kvStore,

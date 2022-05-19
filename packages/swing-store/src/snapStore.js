@@ -21,6 +21,8 @@ const { freeze } = Object;
  *   unlink: typeof import('fs').promises.unlink,
  *   unlinkSync: typeof import('fs').unlinkSync,
  * }} io
+ * @param {object} [options]
+ * @param {boolean | undefined} [options.keepSnapshots]
  */
 export function makeSnapStore(
   root,
@@ -34,6 +36,7 @@ export function makeSnapStore(
     unlink,
     unlinkSync,
   },
+  { keepSnapshots = false } = {},
 ) {
   /** @type {(opts: unknown) => Promise<string>} */
   const ptmpName = promisify(tmpName);
@@ -161,7 +164,9 @@ export function makeSnapStore(
     for (const hash of toDelete) {
       const fullPath = hashPath(hash);
       try {
-        unlinkSync(fullPath);
+        if (keepSnapshots !== true) {
+          unlinkSync(fullPath);
+        }
         toDelete.delete(hash);
       } catch (error) {
         if (ignoreErrors) {
