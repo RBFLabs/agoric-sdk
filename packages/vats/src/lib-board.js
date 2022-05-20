@@ -7,9 +7,6 @@ import { makeStore } from '@agoric/store';
 import { crc6 } from './crc.js';
 
 import './types.js';
-import { deserialize } from 'v8';
-import { makeMarshaller } from '@agoric/swingset-vat/src/liveslots/liveslots';
-import { read } from 'fs';
 
 export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
@@ -49,26 +46,24 @@ function makeBoard(
   const valToId = makeStore('value');
 
   // Create a marshaller that just looks up objects, not publish them.
-  const readonlyMarshaller = Far(
-    'board readonly marshaller',
-    makeMarshal(
+  const readonlyMarshaller = Far('board readonly marshaller', {
+    ...makeMarshal(
       // eslint-disable-next-line no-use-before-define
       val => valToId.get(val),
       // eslint-disable-next-line no-use-before-define
       slot => board.getValue(slot),
     ),
-  );
+  });
 
   // Create a marshaller useful for publishing all ocaps.
-  const publishingMarshaller = Far(
-    'board publishing marshaller',
-    makeMarshal(
+  const publishingMarshaller = Far('board publishing marshaller', {
+    ...makeMarshal(
       // eslint-disable-next-line no-use-before-define
       val => board.getId(val),
       // eslint-disable-next-line no-use-before-define
       slot => board.getValue(slot),
     ),
-  );
+  });
 
   /** @type {Board} */
   const board = Far('Board', {
