@@ -15,6 +15,7 @@ module.exports = {
   ],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
+    '@typescript-eslint/no-floating-promises': 'warn',
     'jsdoc/no-multi-asterisks': 'off',
     'jsdoc/multiline-blocks': 'off',
     // Use these rules to warn about JSDoc type problems, such as after
