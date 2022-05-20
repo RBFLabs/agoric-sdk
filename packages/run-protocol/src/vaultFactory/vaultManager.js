@@ -246,7 +246,7 @@ const helperBehavior = {
     Object.assign(state, stateUpdates);
     facets.helper.assetNotify();
     trace('chargeAllVaults complete');
-    facets.helper.reschedulePriceCheck();
+    void facets.helper.reschedulePriceCheck();
   },
 
   /** @param {MethodContext} context */
@@ -629,7 +629,7 @@ const selfBehavior = {
 const finish = ({ state, facets: { helper } }) => {
   state.prioritizedVaults.setRescheduler(helper.reschedulePriceCheck);
 
-  observeNotifier(state.periodNotifier, {
+  void observeNotifier(state.periodNotifier, {
     updateState: updateTime =>
       helper
         .chargeAllVaults(updateTime, state.poolIncrementSeat)

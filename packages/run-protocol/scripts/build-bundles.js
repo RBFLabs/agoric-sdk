@@ -10,7 +10,7 @@ import { defaultProposalBuilder as collateralProposalBuilder } from './add-colla
 process.env.INTERCHAIN_DENOM = 'arbitrary value to prevent build error';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
-extractProposalBundles(
+await extractProposalBundles(
   [
     ['.', defaultProposalBuilder],
     ['.', collateralProposalBuilder],

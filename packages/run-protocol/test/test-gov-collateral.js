@@ -391,7 +391,7 @@ test('Committee can raise debt limit', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
-  s.startRunPreview();
+  await s.startRunPreview();
 
   await Promise.all([
     s.enactVaultAssetProposal(),

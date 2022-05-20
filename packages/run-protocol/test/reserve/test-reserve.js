@@ -158,8 +158,8 @@ test('governance add Liquidity to the AMM', async t => {
   await E(voterFacet).castBallotFor(details.questionHandle, [
     details.positions[0],
   ]);
-  timer.tick();
-  timer.tick();
+  await timer.tick();
+  await timer.tick();
   await waitForPromisesToSettle();
 
   t.deepEqual(
@@ -236,8 +236,8 @@ test('request more collateral than available', async t => {
   await E(voterFacet).castBallotFor(details.questionHandle, [
     details.positions[0],
   ]);
-  timer.tick();
-  timer.tick();
+  await timer.tick();
+  await timer.tick();
   await waitForPromisesToSettle();
 
   await outcomeOfUpdate

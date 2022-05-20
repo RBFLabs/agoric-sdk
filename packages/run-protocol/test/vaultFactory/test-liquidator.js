@@ -136,10 +136,10 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const { consume, instance } = space;
   installGovernance(zoe, space.installation.produce);
   space.installation.produce.amm.resolve(t.context.installation.amm);
-  startEconomicCommittee(space, {
+  await startEconomicCommittee(space, {
     options: { econCommitteeOptions: electorateTerms },
   });
-  setupAmm(space);
+  await setupAmm(space);
 
   const governorCreatorFacet = consume.ammGovernorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
@@ -434,7 +434,7 @@ const makeDriver = async (t, initialPrice, priceBase) => {
     timer: () => timer,
     tick: (ticks = 1) => {
       for (let i = 0; i < ticks; i += 1) {
-        timer.tick();
+        void timer.tick();
       }
     },
     makeVaultDriver,
