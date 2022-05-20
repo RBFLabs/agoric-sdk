@@ -18,9 +18,10 @@
   "include": [
     "contractFacet.js",
     "exported.js",
-    "scripts/**/*.{js,ts}",
-    "src/**/*.{js,ts}",
-    "test/**/*.{js,ts}",
+    "scripts/**/*.js",
+    "src/**/*.js",
+    "src/**/*.ts",
+    "test/**/*.js",
     "tools/**/*.js",
   ],
 }
