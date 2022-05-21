@@ -44,7 +44,7 @@ function makeErtpService(baggage) {
   return ertpService;
 }
 
-export const buildRootObject = async (vatPowers, vatParams, baggage) =>
+export const buildRootObject = async (_vatPowers, _vatParams, baggage) =>
   Far('root', {
     makeErtpService: () => makeErtpService(baggage),
   });
