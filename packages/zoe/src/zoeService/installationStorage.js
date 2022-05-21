@@ -1,7 +1,6 @@
 // @ts-check
 
 import { assert, details as X } from '@agoric/assert';
-import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makeWeakStore, provide } from '@agoric/store';
 import {
@@ -20,18 +19,34 @@ export const makeInstallationStorage = (
   getBundleCapForID,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
+  const bundledInstallationKindHandle = provide(
+    zoeBaggage,
+    'bundledInstallationKindHandle',
+    () => makeKindHandle('BundledInstallation'),
+  );
+  /** @type {(bundle: Bundle | SourceBundle) => Installation} */
+  const makeBundledInstallation = defineDurableKind(
+    bundledInstallationKindHandle,
+    bundle => ({ bundle }),
+    // @ts-expect-error
+    {
+      getBundle: ({ state }) => state.bundle,
+    },
+  );
+
   const bundleFreeInstallationKindHandle = provide(
     zoeBaggage,
     'bundleFreeInstallationKindHandle',
-    () => makeKindHandle('Installation'),
+    () => makeKindHandle('FreeInstallation'),
   );
   /** @type {() => Installation} */
-  // @ts-expect-error cast
   const makeBundleFreeInstallation = defineDurableKind(
     bundleFreeInstallationKindHandle,
     () => ({}),
+    // @ts-expect-error was not needed when the param list was `()` rather than
+    // `_context`. I have no idea why.
     {
-      getBundle: () => {
+      getBundle: _context => {
         throw Error('bundleID-based Installation');
       },
     },
@@ -56,10 +71,7 @@ export const makeInstallationStorage = (
   const installBundle = async bundle => {
     assert.typeof(bundle, 'object', 'a bundle must be provided');
     /** @type {Installation} */
-    // @ts-expect-error cast
-    const installation = Far('Installation', {
-      getBundle: () => bundle,
-    });
+    const installation = makeBundledInstallation(harden(bundle));
     installationsBundle.init(installation, bundle);
     return installation;
   };
