@@ -1,11 +1,7 @@
 // @ts-check
-
-import {
-  makeScalarBigMapStore,
-  makeScalarBigSetStore,
-  provideDurableSingleton,
-} from '@agoric/vat-data/src';
-import { AssetKind, makeDurableIssuerKit } from '../../../src';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makeScalarBigSetStore } from '@agoric/vat-data/src';
 
 export const buildRootObject = async (vatPowers, vatParameters, baggage) => {
   const issuerBaggageSet = makeScalarBigSetStore('BaggageSet', {
