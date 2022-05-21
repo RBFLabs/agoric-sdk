@@ -11,7 +11,7 @@ import { Far } from '@endo/marshal';
 import {
   provideDurableSingleton,
   makeScalarBigMapStore,
-} from '@agoric/vat-data/src';
+} from '@agoric/vat-data';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 
