@@ -89,12 +89,11 @@ harden(partialAssign);
 
 export const provideDurableSingleton = (
   baggage,
-  kindHandleName,
   kindName,
   behavior,
   options = undefined,
 ) => {
-  const kindHandle = provide(baggage, kindHandleName, () =>
+  const kindHandle = provide(baggage, `${kindName}KindHandle`, () =>
     makeKindHandle(kindName),
   );
   const makeSingleton = defineDurableKind(
@@ -109,12 +108,11 @@ harden(provideDurableSingleton);
 
 export const provideDurableSingletonKit = (
   baggage,
-  kindHandleName,
   kindName,
   behaviorFacets,
   options = undefined,
 ) => {
-  const kindHandle = provide(baggage, kindHandleName, () =>
+  const kindHandle = provide(baggage, `${kindName}KindHandle`, () =>
     makeKindHandle(kindName),
   );
   const makeSingletonKit = defineDurableKindMulti(

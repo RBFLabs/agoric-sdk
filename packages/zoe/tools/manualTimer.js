@@ -105,115 +105,109 @@ const buildManualTimer = (
 
   /** @type {ManualTimer} */
   // @ts-expect-error provideDurableSingleton needs type info
-  const timer = provideDurableSingleton(
-    timerBaggage,
-    'TimerKindHandle',
-    'ManualTimer',
-    {
-      // This function will only be called in testing code to advance the clock.
-      tick: async (_context, msg) => {
-        ticks += timeStep;
-        log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
-        if (schedule.has(ticks)) {
-          const wakers = schedule.get(ticks);
-          schedule.delete(ticks);
-          await Promise.allSettled(
-            wakers.map(waker => {
-              log(`&& running a task scheduled for ${ticks}. &&`);
-              return E(waker).wake(ticks);
-            }),
-          );
-        }
-      },
-      getCurrentTimestamp: _context => ticks,
-      setWakeup: (_context, baseTime, waker) => {
-        assert.typeof(baseTime, 'bigint');
-        assert(
-          baseTime % timeStep === 0n,
-          `timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
+  const timer = provideDurableSingleton(timerBaggage, 'ManualTimer', {
+    // This function will only be called in testing code to advance the clock.
+    tick: async (_context, msg) => {
+      ticks += timeStep;
+      log(`@@ tick:${ticks}${msg ? `: ${msg}` : ''} @@`);
+      if (schedule.has(ticks)) {
+        const wakers = schedule.get(ticks);
+        schedule.delete(ticks);
+        await Promise.allSettled(
+          wakers.map(waker => {
+            log(`&& running a task scheduled for ${ticks}. &&`);
+            return E(waker).wake(ticks);
+          }),
         );
-        if (baseTime <= ticks) {
-          log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
-          E(waker).wake(ticks);
-          return baseTime;
-        }
-        log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
-        if (!schedule.has(baseTime)) {
-          schedule.init(baseTime, harden([]));
-        }
-        schedule.set(baseTime, harden([...schedule.get(baseTime), waker]));
+      }
+    },
+    getCurrentTimestamp: _context => ticks,
+    setWakeup: (_context, baseTime, waker) => {
+      assert.typeof(baseTime, 'bigint');
+      assert(
+        baseTime % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${baseTime} is not divisible`,
+      );
+      if (baseTime <= ticks) {
+        log(`&& task was past its deadline when scheduled: ${baseTime} &&`);
+        E(waker).wake(ticks);
         return baseTime;
-      },
-      removeWakeup: (_context, waker) => {
-        /** @type {Array<Timestamp>} */
-        const baseTimes = [];
-        for (const [baseTime, wakers] of schedule.entries()) {
-          if (wakers.includes(waker)) {
-            baseTimes.push(baseTime);
-            const remainingWakers = wakers.filter(w => waker !== w);
+      }
+      log(`@@ schedule task for:${baseTime}, currently: ${ticks} @@`);
+      if (!schedule.has(baseTime)) {
+        schedule.init(baseTime, harden([]));
+      }
+      schedule.set(baseTime, harden([...schedule.get(baseTime), waker]));
+      return baseTime;
+    },
+    removeWakeup: (_context, waker) => {
+      /** @type {Array<Timestamp>} */
+      const baseTimes = [];
+      for (const [baseTime, wakers] of schedule.entries()) {
+        if (wakers.includes(waker)) {
+          baseTimes.push(baseTime);
+          const remainingWakers = wakers.filter(w => waker !== w);
 
-            if (remainingWakers.length) {
-              // Cull the wakers for this time.
-              schedule.set(baseTime, remainingWakers);
-            } else {
-              // There are no more wakers for this time.
-              schedule.delete(baseTime);
-            }
+          if (remainingWakers.length) {
+            // Cull the wakers for this time.
+            schedule.set(baseTime, remainingWakers);
+          } else {
+            // There are no more wakers for this time.
+            schedule.delete(baseTime);
           }
         }
-        return harden(baseTimes);
-      },
-      makeRepeater: ({ self }, delay, interval) =>
-        makeRepeaterKit(delay, interval, self).repeater,
-      makeNotifier: ({ self }, delay, interval) => {
-        assert.typeof(delay, 'bigint');
-        assert(
-          delay % timeStep === 0n,
-          `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
-        );
-        assert.typeof(interval, 'bigint');
-        assert(
-          interval % timeStep === 0n,
-          `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
-        );
-        const { notifier, updater } = makeNotifierKit();
-        const notifierWaker = provideDurableSingleton(
-          timerBaggage,
-          'NotifierWakerKindHandle',
-          'NotifyWaker',
-          {
-            // expect-error
-            wake: async ({ self: notiferWaker }, timestamp) => {
-              assert.typeof(timestamp, 'bigint');
-              updater.updateState(timestamp);
-              timer.setWakeup(ticks + interval, notiferWaker);
-            },
-          },
-        );
-        self.setWakeup(ticks + delay, notifierWaker);
-        return notifier;
-      },
-      delay: ({ self }, delay) => {
-        assert.typeof(delay, 'bigint');
-        assert(
-          delay % timeStep === 0n,
-          `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
-        );
-        const promiseKit = makePromiseKit();
-        const makeDelayWaker = defineDurableKind(
-          delayWakerKindHandle,
-          () => ({}),
-          {
-            wake: async (_context, timestamp) => {
-              promiseKit.resolve(timestamp);
-            },
-          },
-        );
-        self.setWakeup(delay, makeDelayWaker());
-        return promiseKit.promise;
-      },
+      }
+      return harden(baseTimes);
     },
-  );
+    makeRepeater: ({ self }, delay, interval) =>
+      makeRepeaterKit(delay, interval, self).repeater,
+    makeNotifier: ({ self }, delay, interval) => {
+      assert.typeof(delay, 'bigint');
+      assert(
+        delay % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
+      );
+      assert.typeof(interval, 'bigint');
+      assert(
+        interval % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${interval} is not divisible`,
+      );
+      const { notifier, updater } = makeNotifierKit();
+      const notifierWaker = provideDurableSingleton(
+        timerBaggage,
+        'NotifyWaker',
+        {
+          // expect-error
+          wake: async ({ self: notiferWaker }, timestamp) => {
+            assert.typeof(timestamp, 'bigint');
+            updater.updateState(timestamp);
+            timer.setWakeup(ticks + interval, notiferWaker);
+          },
+        },
+      );
+      self.setWakeup(ticks + delay, notifierWaker);
+      return notifier;
+    },
+    delay: ({ self }, delay) => {
+      assert.typeof(delay, 'bigint');
+      assert(
+        delay % timeStep === 0n,
+        `timer has a resolution of ${timeStep}; ${delay} is not divisible`,
+      );
+      const promiseKit = makePromiseKit();
+      const makeDelayWaker = defineDurableKind(
+        delayWakerKindHandle,
+        () => ({}),
+        {
+          wake: async (_context, timestamp) => {
+            promiseKit.resolve(timestamp);
+          },
+        },
+      );
+      self.setWakeup(delay, makeDelayWaker());
+      return promiseKit.promise;
+    },
+  });
 
   return timer;
 };

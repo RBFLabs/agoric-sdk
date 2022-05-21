@@ -185,7 +185,7 @@ export async function makeFakePriceAuthority(options) {
     const paBaggage = makeScalarBigMapStore('ManualTimer', { durable: true });
     let firstTime = true;
     const makeHandler = baggage =>
-      provideDurableSingleton(baggage, 'WakerKindHandle', 'Waker', {
+      provideDurableSingleton(baggage, 'Waker', {
         wake: async t => {
           if (firstTime) {
             firstTime = false;

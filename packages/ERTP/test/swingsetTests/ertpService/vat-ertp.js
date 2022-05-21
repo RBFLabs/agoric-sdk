@@ -14,32 +14,27 @@ function makeErtpService(baggage) {
   });
   baggage.init('IssuerBaggageSet', issuerBaggageSet);
 
-  const ertpService = provideDurableSingleton(
-    baggage,
-    'ERTPServiceKindHandle',
-    'ERTPService',
-    {
-      makeIssuerKit: (
-        _context,
+  const ertpService = provideDurableSingleton(baggage, 'ERTPService', {
+    makeIssuerKit: (
+      _context,
+      allegedName,
+      assetKind = AssetKind.NAT,
+      displayInfo = harden({}),
+    ) => {
+      const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
+        durable: true,
+      });
+      const issuerKit = makeDurableIssuerKit(
+        issuerBaggage,
         allegedName,
-        assetKind = AssetKind.NAT,
-        displayInfo = harden({}),
-      ) => {
-        const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
-          durable: true,
-        });
-        const issuerKit = makeDurableIssuerKit(
-          issuerBaggage,
-          allegedName,
-          assetKind,
-          displayInfo,
-        );
-        issuerBaggageSet.add(issuerBaggage);
+        assetKind,
+        displayInfo,
+      );
+      issuerBaggageSet.add(issuerBaggage);
 
-        return issuerKit;
-      },
+      return issuerKit;
     },
-  );
+  });
 
   return ertpService;
 }
