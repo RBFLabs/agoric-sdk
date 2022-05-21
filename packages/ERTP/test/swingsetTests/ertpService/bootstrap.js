@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigSetStore } from '@agoric/vat-data/src';
+import { makeScalarBigSetStore } from '@agoric/vat-data';
 
 export const buildRootObject = async (vatPowers, vatParameters, baggage) => {
   const issuerBaggageSet = makeScalarBigSetStore('BaggageSet', {

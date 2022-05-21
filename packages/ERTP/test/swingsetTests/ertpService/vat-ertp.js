@@ -5,7 +5,7 @@ import {
   makeScalarBigMapStore,
   makeScalarBigSetStore,
   provideDurableSingleton,
-} from '@agoric/vat-data/src';
+} from '@agoric/vat-data';
 import { AssetKind, makeDurableIssuerKit } from '../../../src';
 
 function makeErtpService(baggage) {
