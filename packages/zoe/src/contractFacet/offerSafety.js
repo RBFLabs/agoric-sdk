@@ -25,7 +25,7 @@ const satisfiesInternal = (giveOrWant = {}, allocation) => {
     }
     if (typeof requiredAmount.value !== 'bigint') {
       multiples = 1n;
-    } else {
+    } else if (requiredAmount.value > 0n) {
       assert.typeof(allocationAmount.value, 'bigint');
       const howMany = allocationAmount.value / requiredAmount.value;
       if (multiples === undefined || multiples > howMany) {
