@@ -155,6 +155,18 @@ export const assertProposalShape = (seat, expected) => {
   assertKeys(actual.give, expected.give);
   assertKeys(actual.want, expected.want);
   assertKeys(actual.exit, expected.exit);
+  if ('multiples' in expected) {
+    // Not sure what else to test. Probably nothing until we convert all this
+    // to use proper patterns
+  } else {
+    // multiples other than 1n need to be opted into
+    assert(
+      actual.multiples === 1n,
+      X`Only 1n multiples expected: ${actual.multiples}`,
+    );
+    // Not sure what to do with the value of expected.multiples. Probably
+    // nothing until we convert all this to use proper patterns
+  }
 };
 
 /* Given a brand, assert that brand is AssetKind.NAT. */
