@@ -1,5 +1,8 @@
 /* global globalThis */
 
+// See https://github.com/Agoric/agoric-sdk/issues/5417
+/// <reference types="ses"/>
+
 import { assert } from '@agoric/assert';
 import {
   M,
