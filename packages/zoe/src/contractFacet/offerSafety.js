@@ -2,25 +2,41 @@
 
 import { AmountMath } from '@agoric/ertp';
 
+const { entries } = Object;
+
 /**
- * Helper to perform satisfiesWant and satisfiesGive. Is
- * allocationAmount greater than or equal to requiredAmount for every
- * keyword of giveOrWant?
+ * Helper to perform satisfiesWant and satisfiesGive. How many times
+ * does the `allocation` satisfy the `giveOrWant`?
  *
  * @param {AmountKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
+ * @returns {bigint}
  */
 const satisfiesInternal = (giveOrWant = {}, allocation) => {
-  const isGTEByKeyword = ([keyword, requiredAmount]) => {
-    // If there is no allocation for a keyword, we know the giveOrWant
-    // is not satisfied without checking further.
+  /** @type {bigint | undefined} */
+  let multiples; // undefined represents infinity
+  for (const [keyword, requiredAmount] of entries(giveOrWant)) {
     if (allocation[keyword] === undefined) {
-      return false;
+      return 0n;
     }
     const allocationAmount = allocation[keyword];
-    return AmountMath.isGTE(allocationAmount, requiredAmount);
-  };
-  return Object.entries(giveOrWant).every(isGTEByKeyword);
+    if (!AmountMath.isGTE(allocationAmount, requiredAmount)) {
+      return 0n;
+    }
+    if (typeof requiredAmount.value !== 'bigint') {
+      multiples = 1n;
+    } else {
+      assert.typeof(allocationAmount.value, 'bigint');
+      const howMany = allocationAmount.value / requiredAmount.value;
+      if (multiples === undefined || multiples > howMany) {
+        multiples = howMany;
+      }
+    }
+  }
+  if (multiples === undefined) {
+    return 1n;
+  }
+  return multiples;
 };
 
 /**
@@ -38,7 +54,7 @@ const satisfiesInternal = (giveOrWant = {}, allocation) => {
  * to be given to a user.
  */
 const satisfiesWant = (proposal, allocation) =>
-  satisfiesInternal(proposal.want, allocation);
+  satisfiesInternal(proposal.want, allocation) >= 1n;
 
 /**
  * For this allocation to count as a full refund, the allocated
@@ -55,8 +71,9 @@ const satisfiesWant = (proposal, allocation) =>
  * as keys and amounts as values. These amounts are the reallocation
  * to be given to a user.
  */
-const satisfiesGive = (proposal, allocation) =>
-  satisfiesInternal(proposal.give, allocation);
+// Commented out because not currently used
+// const satisfiesGive = (proposal, allocation) =>
+//   satisfiesInternal(proposal.give, allocation) >= 1n;
 
 /**
  * `isOfferSafe` checks offer safety for a single offer.
@@ -76,9 +93,10 @@ const satisfiesGive = (proposal, allocation) =>
  * to be given to a user.
  */
 function isOfferSafe(proposal, allocation) {
-  return (
-    satisfiesGive(proposal, allocation) || satisfiesWant(proposal, allocation)
-  );
+  const { give, want, multiples } = proposal;
+  const howMany =
+    satisfiesInternal(give, allocation) + satisfiesInternal(want, allocation);
+  return howMany >= multiples;
 }
 
 export { isOfferSafe, satisfiesWant };

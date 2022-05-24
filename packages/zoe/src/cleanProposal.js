@@ -10,6 +10,7 @@ import { arrayToObj } from './objArrayConversion.js';
 import '../exported.js';
 import './internal-types.js';
 
+const { values } = Object;
 const { ownKeys } = Reflect;
 
 const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
@@ -145,6 +146,7 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
   const {
     want = harden({}),
     give = harden({}),
+    multiples = 1n,
     exit = harden({ onDemand: null }),
     ...rest
   } = proposal;
@@ -162,10 +164,41 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
   const cleanedProposal = harden({
     want: cleanedWant,
     give: cleanedGive,
+    multiples,
     exit,
   });
   fit(cleanedProposal, ProposalShape);
+  if (multiples > 1n) {
+    for (const amount of values(cleanedGive)) {
+      assert.typeof(
+        amount.value,
+        'bigint',
+        X`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`,
+      );
+    }
+  }
   assertExit(exit);
   assertKeywordNotInBoth(cleanedWant, cleanedGive);
   return cleanedProposal;
 };
+
+/**
+ *
+ * @param {Amount} amount
+ * @param {bigint} multiples
+ * @returns {Amount}
+ */
+export const scaleAmount = (amount, multiples) => {
+  if (multiples === 1n) {
+    return amount;
+  }
+  const { brand, value } = amount;
+  assert(value >= 1n);
+  assert.typeof(
+    value,
+    'bigint',
+    X`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`,
+  );
+  return harden({ brand, value: value * multiples });
+};
+harden(scaleAmount);
