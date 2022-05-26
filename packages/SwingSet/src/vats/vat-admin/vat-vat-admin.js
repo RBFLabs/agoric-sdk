@@ -98,7 +98,7 @@ export function buildRootObject(vatPowers) {
       done() {
         return doneP;
       },
-      upgrade(bundlecap, options) {
+      upgrade(bundlecap, options = {}) {
         const { vatParameters, ...rest } = options;
         const leftovers = Object.keys(rest);
         if (leftovers.length) {

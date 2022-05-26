@@ -165,5 +165,19 @@ export const buildRootObject = () => {
       };
       await E(ulrikAdmin).upgrade(bcap2, options2); // throws
     },
+
+    doUpgradeWithoutVatParameters: async () => {
+      const bcap1 = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const res = await E(vatAdmin).createVat(bcap1);
+      ulrikAdmin = res.adminNode;
+      const root = res.root;
+      const paramA = await E(root).getParameters();
+
+      const bcap2 = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      await E(ulrikAdmin).upgrade(bcap2); // no options
+      const paramB = await E(root).getParameters();
+
+      return [paramA, paramB];
+    },
   });
 };
