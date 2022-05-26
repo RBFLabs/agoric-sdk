@@ -150,7 +150,7 @@ test('amm add and remove liquidity', async t => {
 
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   // This timer is only used to build quotes. Let's make it non-zero
-  const timer = buildManualTimer(console.log, 30n);
+  const timer = buildManualTimer(t.log, 30n);
 
   const { zoe, amm } = await setupAmmServices(
     t,
