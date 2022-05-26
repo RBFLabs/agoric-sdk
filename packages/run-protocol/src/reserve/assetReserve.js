@@ -262,9 +262,16 @@ const start = async (zcf, privateArgs) => {
     { addLiquidityToAmmPool, burnRUNToReduceShortfall },
   );
 
+  const getDepositFacet = _brand => {
+    // FIXME: How do we obtain the deposit facet for a brand?
+    // It needs to have a `receive(payment)` method.
+    return undefined;
+  };
+
   const publicFacet = augmentPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
+      getDepositFacet,
     }),
   );
 

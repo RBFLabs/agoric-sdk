@@ -9,7 +9,7 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E } from '@endo/far';
-import { buildDistributor } from '../src/distributeFees.js';
+import { buildDistributor } from '../src/feeDistributor.js';
 
 // Some notifier updates aren't propogating sufficiently quickly for the tests.
 // This invocation (thanks to Warner) waits for all promises that can fire to
@@ -64,7 +64,7 @@ test('fee distribution', async t => {
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
   const vaultFactory = makeFakeFeeProducer();
   const amm = makeFakeFeeProducer();
-  const epochTimer = buildManualTimer(console.log);
+  const epochTimer = buildManualTimer(t.log);
   const distributorParams = {
     epochInterval: 1n,
   };
@@ -94,7 +94,7 @@ test('fee distribution, leftovers', async t => {
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacet(issuer);
   const vaultFactory = makeFakeFeeProducer();
   const amm = makeFakeFeeProducer();
-  const epochTimer = buildManualTimer(console.log);
+  const epochTimer = buildManualTimer(t.log);
   const distributorParams = {
     epochInterval: 1n,
   };
