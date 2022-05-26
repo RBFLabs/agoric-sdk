@@ -584,6 +584,12 @@ export function makeVatKeeper(
       JSON.stringify({ snapshotID, startPos: endPosition }),
     );
     addToSnapshot(snapshotID);
+    kernelSlog.write({
+      type: 'heap-snapshot-save',
+      vatID,
+      snapshotID,
+      endPosition,
+    });
     return true;
   }
 

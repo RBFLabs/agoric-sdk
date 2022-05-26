@@ -113,6 +113,10 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const lastSnapshot = vatKeeper.getLastSnapshot();
+    if (lastSnapshot) {
+      const { snapshotID } = lastSnapshot;
+      kernelSlog.write({ type: 'heap-snapshot-load', vatID, snapshotID });
+    }
 
     // start the worker and establish a connection
     const worker = await startXSnap(

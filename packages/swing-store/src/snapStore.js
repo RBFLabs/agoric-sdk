@@ -55,6 +55,7 @@ export const fsStreamReady = stream =>
  *   createWriteStream: typeof import('fs').createWriteStream,
  *   resolve: typeof import('path').resolve,
  *   rename: typeof import('fs').promises.rename,
+ *   stat: typeof import('fs').promises.stat,
  *   unlink: typeof import('fs').promises.unlink,
  *   unlinkSync: typeof import('fs').unlinkSync,
  * }} io
@@ -68,6 +69,7 @@ export function makeSnapStore(
     createWriteStream,
     resolve,
     rename,
+    stat,
     unlink,
     unlinkSync,
   },
@@ -100,17 +102,19 @@ export function makeSnapStore(
 
   /**
    * @param {string} dest basename, relative to root
-   * @param { (name: string) => Promise<T> } thunk
-   * @returns { Promise<T> }
-   * @template T
+   * @param { (name: string) => Promise } thunk
+   * @returns { Promise<{ filename, size }> }
    */
   async function atomicWrite(dest, thunk) {
     assert(!dest.includes('/'));
     const tmp = await ptmpName({ tmpdir: root, template: 'atomic-XXXXXX' });
     let result;
     try {
-      result = await thunk(tmp);
-      await rename(tmp, resolve(root, dest));
+      await thunk(tmp);
+      const target = resolve(root, dest);
+      await rename(tmp, target);
+      const stats = await stat(target);
+      result = { filename: target, size: stats.size };
     } finally {
       try {
         await unlink(tmp);
@@ -155,6 +159,8 @@ export function makeSnapStore(
   async function save(saveRaw) {
     return withTempName(async snapFile => {
       await saveRaw(snapFile);
+      const stats = await stat(snapFile);
+      const rawsize = stats.size;
       const h = await fileHash(snapFile);
       if (toDelete.has(h)) {
         toDelete.delete(h);
@@ -163,8 +169,12 @@ export function makeSnapStore(
       if (existsSync(hashPath(h))) {
         return h;
       }
-      await atomicWrite(`${h}.gz`, gztmp =>
+      const res = await atomicWrite(`${h}.gz`, gztmp =>
         filter(snapFile, createGzip(), gztmp),
+      );
+      // TODO: remove once #5419 is resolved
+      console.log(
+        `XS snapshot written to ${res.filename} : ${res.size} bytes compressed, ${rawsize} raw`,
       );
       return h;
     }, 'save-raw');
