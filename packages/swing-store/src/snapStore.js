@@ -102,8 +102,8 @@ export function makeSnapStore(
 
   /**
    * @param {string} dest basename, relative to root
-   * @param { (name: string) => Promise } thunk
-   * @returns { Promise<{ filename, size }> }
+   * @param { (name: string) => Promise<void> } thunk
+   * @returns { Promise<{ filename: string, size: number }> }
    */
   async function atomicWrite(dest, thunk) {
     assert(!dest.includes('/'));
