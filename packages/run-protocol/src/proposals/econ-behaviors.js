@@ -606,6 +606,8 @@ export const startRewardDistributor = async ({
     centralIssuerP,
     centralBrandP,
   ]);
+
+  console.error('@@@ trying to look up distributors');
   const [rewardDistributorDepositFacet, reserveDepositFacet] =
     await Promise.all([
       E(bankManager)
@@ -620,6 +622,11 @@ export const startRewardDistributor = async ({
       E(reservePublicFacet).getDepositFacet(centralBrand),
     ]);
 
+  console.error('@@@ got distributors', {
+    rewardDistributorDepositFacet,
+    reserveDepositFacet,
+    feeDistributor,
+  });
   const feeDistributorFacets = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
@@ -631,6 +638,7 @@ export const startRewardDistributor = async ({
       },
     },
   );
+  console.error('@@@ started contract');
   feeDistributorCreatorFacetP.resolve(feeDistributorFacets.creatorFacet);
   feeDistributorP.resolve(feeDistributorFacets.instance);
 
@@ -639,6 +647,7 @@ export const startRewardDistributor = async ({
       E(feeDistributorFacets.publicFacet).addFeeSource(cf),
     ),
   );
+  console.error('@@@ added fee sources');
 };
 harden(startRewardDistributor);
 

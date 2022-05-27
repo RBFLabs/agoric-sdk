@@ -265,7 +265,9 @@ const start = async (zcf, privateArgs) => {
   const getDepositFacet = _brand => {
     // FIXME: How do we obtain the deposit facet for a brand?
     // It needs to have a `receive(payment)` method.
-    return undefined;
+    return Far('stubbed deposit facet', {
+      receive: _pmt => null,
+    });
   };
 
   const publicFacet = augmentPublicFacet(
